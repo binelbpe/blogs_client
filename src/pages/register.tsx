@@ -50,7 +50,6 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate form
     const validationErrors = validateForm(formData, validationRules);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -60,11 +59,17 @@ export default function Register() {
     setIsSubmitting(true);
     try {
       const response = await api.post("/auth/register", formData);
-      const { data } = response.data;
+      
+      // Check if response has the expected structure
+      if (!response.data?.data?.accessToken || 
+          !response.data?.data?.refreshToken || 
+          !response.data?.data?.user) {
+        throw new Error("Invalid server response");
+      }
 
-      // Pass all three required arguments
-      login(data.accessToken, data.refreshToken, data.user);
-
+      const { accessToken, refreshToken, user } = response.data.data;
+      
+      login(accessToken, refreshToken, user);
       toast.success("Registration successful!");
       router.push("/dashboard");
     } catch (error) {
