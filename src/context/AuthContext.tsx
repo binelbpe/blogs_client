@@ -54,6 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = (accessToken: string, refreshToken: string, userData: User) => {
+    console.log('Login attempt with:', { 
+      hasAccessToken: !!accessToken, 
+      hasRefreshToken: !!refreshToken, 
+      userData 
+    });
+
+    if (!accessToken || !refreshToken) {
+      console.error('Missing tokens in login');
+      return;
+    }
+
     try {
       // Store tokens first
       localStorage.setItem("accessToken", accessToken);
@@ -67,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       setUser(null);
+      throw error; // Rethrow to handle in login page
     }
   };
 

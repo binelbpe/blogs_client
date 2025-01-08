@@ -51,25 +51,26 @@ export default function Login() {
 
     setIsSubmitting(true);
     try {
+      console.log('Sending login request...');
       const response = await api.post("/auth/login", formData);
+      console.log('Login response:', response.data);
       
-      // Check if response has the expected structure
-      if (!response.data?.data?.accessToken || 
-          !response.data?.data?.refreshToken || 
-          !response.data?.data?.user) {
-        throw new Error("Invalid server response");
+      const { data } = response.data;
+      if (!data?.accessToken || !data?.refreshToken || !data?.user) {
+        console.error('Invalid response structure:', response.data);
+        throw new Error("Invalid server response structure");
       }
 
-      const { accessToken, refreshToken, user } = response.data.data;
-
-      // Store tokens before calling login
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-      
-      login(accessToken, refreshToken, user);
-      toast.success("Login successful!");
-      router.push("/dashboard");
+      try {
+        login(data.accessToken, data.refreshToken, data.user);
+        toast.success("Login successful!");
+        router.push("/dashboard");
+      } catch (loginError) {
+        console.error('Error in login function:', loginError);
+        toast.error("Failed to complete login process");
+      }
     } catch (error) {
+      console.error('Login request error:', error);
       const apiError = handleAPIError(error);
       if (apiError.errors) {
         setErrors(apiError.errors);

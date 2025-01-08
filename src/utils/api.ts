@@ -11,19 +11,20 @@ const api = axios.create({
 // Add request interceptor
 api.interceptors.request.use(
   (config) => {
-    if (config.url?.startsWith('http')) {
-      delete config.baseURL;
-    }
-    
+    console.log('Making request to:', config.url);
     if (typeof window !== "undefined") {
       const accessToken = localStorage.getItem("accessToken");
       if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`;
+        console.log('Added token to request');
+      } else {
+        console.log('No access token found');
       }
     }
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
