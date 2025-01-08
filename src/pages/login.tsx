@@ -43,59 +43,37 @@ export default function Login() {
     e.preventDefault();
     setErrors({});
 
-    const validationErrors = validateForm(formData, validationRules);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
-      console.log('Sending login request with:', formData);
+      console.log('Submitting login form:', formData);
       const response = await api.post("/auth/login", formData);
       console.log('Login response:', response.data);
-      
-      const { data } = response.data;
-      console.log('Extracted data:', data);
 
-      if (!data?.accessToken) {
-        console.error('Missing accessToken in response');
-        throw new Error("Missing access token");
+      if (!response.data?.data?.accessToken || 
+          !response.data?.data?.refreshToken || 
+          !response.data?.data?.user) {
+        console.error('Invalid response structure:', response.data);
+        throw new Error('Invalid server response');
       }
-      if (!data?.refreshToken) {
-        console.error('Missing refreshToken in response');
-        throw new Error("Missing refresh token");
-      }
-      if (!data?.user) {
-        console.error('Missing user data in response');
-        throw new Error("Missing user data");
-      }
+
+      const { accessToken, refreshToken, user } = response.data.data;
 
       // Store tokens first
-      console.log('Storing tokens...');
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      console.log('Tokens stored successfully');
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
 
-      // Then call login
-      console.log('Calling login function with tokens and user data');
-      login(data.accessToken, data.refreshToken, data.user);
-      
+      // Then update auth context
+      login(accessToken, refreshToken, user);
       toast.success("Login successful!");
       router.push("/dashboard");
     } catch (error: any) {
       console.error('Login error:', error);
       console.error('Error response:', error.response?.data);
-      
-      const apiError = handleAPIError(error);
-      if (apiError.errors) {
-        setErrors(apiError.errors);
-      }
-      toast.error(apiError.message);
-      
-      // Clear any existing tokens on error
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
+
+      const message = error.response?.data?.message || "Login failed";
+      const errors = error.response?.data?.errors || {};
+
+      setErrors(errors);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
