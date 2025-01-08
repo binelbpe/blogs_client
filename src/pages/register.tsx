@@ -49,6 +49,7 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
 
     const validationErrors = validateForm(formData, validationRules);
     if (Object.keys(validationErrors).length > 0) {
@@ -59,25 +60,21 @@ export default function Register() {
     setIsSubmitting(true);
     try {
       const response = await api.post("/auth/register", formData);
-      
-      // Check if response has the expected structure
-      if (!response.data?.data?.accessToken || 
-          !response.data?.data?.refreshToken || 
-          !response.data?.data?.user) {
-        throw new Error("Invalid server response");
-      }
+      const { data } = response.data;
 
-      const { accessToken, refreshToken, user } = response.data.data;
+      // Store tokens
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+
+      // Update auth context
+      login(data.accessToken, data.refreshToken, data.user);
       
-      login(accessToken, refreshToken, user);
       toast.success("Registration successful!");
       router.push("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       const apiError = handleAPIError(error);
-      if (apiError.errors) {
-        setErrors(apiError.errors);
-      }
-      toast.error(apiError.message);
+      setErrors(apiError.errors || {});
+      toast.error(apiError.message || "Registration failed");
     } finally {
       setIsSubmitting(false);
     }
