@@ -12,15 +12,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     console.log('Making request to:', config.url);
-    if (typeof window !== "undefined") {
-      const accessToken = localStorage.getItem("accessToken");
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-        console.log('Added token to request');
-      } else {
-        console.log('No access token found');
-      }
-    }
+    
     return config;
   },
   (error) => {
