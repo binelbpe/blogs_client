@@ -36,56 +36,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      if (!accessToken || !refreshToken) {
         setIsLoading(false);
         return;
       }
 
       const response = await api.get("/auth/verify");
-      setUser(response.data.data.user);
+      if (response.data?.data?.user) {
+        setUser(response.data.data.user);
+      }
     } catch (error) {
-      const apiError = handleAPIError(error);
-      console.error("Auth check failed:", apiError.message);
+      console.error("Auth check failed:", error);
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   const login = (accessToken: string, refreshToken: string, userData: User) => {
-    console.log('AuthContext login called with:', {
-      hasAccessToken: !!accessToken,
-      hasRefreshToken: !!refreshToken,
-      userData
-    });
-
-    if (!accessToken) {
-      console.error('No access token provided to login function');
-      throw new Error('Access token is required');
-    }
-    if (!refreshToken) {
-      console.error('No refresh token provided to login function');
-      throw new Error('Refresh token is required');
+    if (!accessToken || !refreshToken || !userData) {
+      console.error('Missing required login data:', { 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken, 
+        hasUserData: !!userData 
+      });
+      throw new Error('Invalid login data');
     }
 
     try {
-      // Store tokens first
-      console.log('Storing tokens in AuthContext...');
+      // Set user state first
+      setUser(userData);
+
+      // Then store tokens
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
-      console.log('Tokens stored in AuthContext');
-      
-      // Then update the user state
-      console.log('Setting user state:', userData);
-      setUser(userData);
-      console.log('User state updated');
+
+      console.log('Login successful:', { 
+        userId: userData.id,
+        hasTokens: true
+      });
     } catch (error) {
-      console.error("Login error in AuthContext:", error);
+      console.error('Login error:', error);
       // Clean up on error
+      setUser(null);
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
-      setUser(null);
       throw error;
     }
   };

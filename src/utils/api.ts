@@ -11,8 +11,10 @@ const api = axios.create({
 // Add request interceptor
 api.interceptors.request.use(
   (config) => {
-    console.log('Making request to:', config.url);
-    
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
     return config;
   },
   (error) => {
@@ -21,7 +23,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for token refresh
+// Add response interceptor
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -33,21 +35,10 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) {
-          console.error('No refresh token found in localStorage');
           throw new Error("No refresh token available");
         }
 
-        console.log('Attempting to refresh token...');
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh-token`,
-          { refreshToken }
-        );
-
-        console.log('Refresh token response:', response.data);
-        if (!response.data?.data?.accessToken || !response.data?.data?.refreshToken) {
-          throw new Error("Invalid refresh token response");
-        }
-
+        const response = await api.post("/auth/refresh-token", { refreshToken });
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
         localStorage.setItem("accessToken", accessToken);
@@ -55,15 +46,11 @@ api.interceptors.response.use(
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
+      } catch (error) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-
-        if (typeof window !== "undefined") {
-          window.location.href = "/login?session=expired";
-        }
-        return Promise.reject(refreshError);
+        window.location.href = "/login";
+        return Promise.reject(error);
       }
     }
 

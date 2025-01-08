@@ -43,37 +43,43 @@ export default function Login() {
     e.preventDefault();
     setErrors({});
 
+    // Validate form first
+    const validationErrors = validateForm(formData, validationRules);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       console.log('Submitting login form:', formData);
       const response = await api.post("/auth/login", formData);
       console.log('Login response:', response.data);
 
-      if (!response.data?.data?.accessToken || 
-          !response.data?.data?.refreshToken || 
-          !response.data?.data?.user) {
-        console.error('Invalid response structure:', response.data);
-        throw new Error('Invalid server response');
+      const { data } = response.data;
+      if (!data?.accessToken || !data?.refreshToken || !data?.user) {
+        throw new Error('Invalid response from server');
       }
 
-      const { accessToken, refreshToken, user } = response.data.data;
+      // Store tokens before login
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
 
-      // Store tokens first
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-
-      // Then update auth context
-      login(accessToken, refreshToken, user);
+      // Call login after storing tokens
+      await login(data.accessToken, data.refreshToken, data.user);
+      
       toast.success("Login successful!");
       router.push("/dashboard");
     } catch (error: any) {
       console.error('Login error:', error);
-      console.error('Error response:', error.response?.data);
+      
+      // Clear any existing tokens on error
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
 
-      const message = error.response?.data?.message || "Login failed";
-      const errors = error.response?.data?.errors || {};
-
-      setErrors(errors);
-      toast.error(message);
+      const apiError = handleAPIError(error);
+      setErrors(apiError.errors || {});
+      toast.error(apiError.message || "Login failed");
     } finally {
       setIsSubmitting(false);
     }
