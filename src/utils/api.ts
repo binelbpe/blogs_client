@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -41,27 +41,35 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) {
-          throw new Error("No refresh token");
+          console.error('No refresh token found in localStorage');
+          throw new Error("No refresh token available");
         }
 
+        console.log('Attempting to refresh token...');
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh-token`,
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh-token`,
           { refreshToken }
         );
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        console.log('Refresh token response:', response.data);
+        if (!response.data?.data?.accessToken || !response.data?.data?.refreshToken) {
+          throw new Error("Invalid refresh token response");
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", newRefreshToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return axios(originalRequest);
+        return api(originalRequest);
       } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
 
         if (typeof window !== "undefined") {
-          window.location.href = "/login";
+          window.location.href = "/login?session=expired";
         }
         return Promise.reject(refreshError);
       }
