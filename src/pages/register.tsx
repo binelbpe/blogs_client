@@ -42,7 +42,6 @@ export default function Register() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -62,14 +61,10 @@ export default function Register() {
     try {
       const response = await api.post("/auth/register", formData);
       const { data } = response.data;
-      
+
       // Pass all three required arguments
-      login(
-        data.accessToken,
-        data.refreshToken,
-        data.user
-      );
-      
+      login(data.accessToken, data.refreshToken, data.user);
+
       toast.success("Registration successful!");
       router.push("/dashboard");
     } catch (error) {
