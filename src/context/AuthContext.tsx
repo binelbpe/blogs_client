@@ -54,31 +54,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = (accessToken: string, refreshToken: string, userData: User) => {
-    console.log('Login attempt with:', { 
-      hasAccessToken: !!accessToken, 
-      hasRefreshToken: !!refreshToken, 
-      userData 
+    console.log('AuthContext login called with:', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      userData
     });
 
-    if (!accessToken || !refreshToken) {
-      console.error('Missing tokens in login');
-      return;
+    if (!accessToken) {
+      console.error('No access token provided to login function');
+      throw new Error('Access token is required');
+    }
+    if (!refreshToken) {
+      console.error('No refresh token provided to login function');
+      throw new Error('Refresh token is required');
     }
 
     try {
       // Store tokens first
+      console.log('Storing tokens in AuthContext...');
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
+      console.log('Tokens stored in AuthContext');
       
       // Then update the user state
+      console.log('Setting user state:', userData);
       setUser(userData);
+      console.log('User state updated');
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login error in AuthContext:", error);
       // Clean up on error
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       setUser(null);
-      throw error; // Rethrow to handle in login page
+      throw error;
     }
   };
 

@@ -51,26 +51,42 @@ export default function Login() {
 
     setIsSubmitting(true);
     try {
-      console.log('Sending login request...');
+      console.log('Sending login request with:', formData);
       const response = await api.post("/auth/login", formData);
       console.log('Login response:', response.data);
       
       const { data } = response.data;
-      if (!data?.accessToken || !data?.refreshToken || !data?.user) {
-        console.error('Invalid response structure:', response.data);
-        throw new Error("Invalid server response structure");
+      console.log('Extracted data:', data);
+
+      if (!data?.accessToken) {
+        console.error('Missing accessToken in response');
+        throw new Error("Missing access token");
+      }
+      if (!data?.refreshToken) {
+        console.error('Missing refreshToken in response');
+        throw new Error("Missing refresh token");
+      }
+      if (!data?.user) {
+        console.error('Missing user data in response');
+        throw new Error("Missing user data");
       }
 
-      try {
-        login(data.accessToken, data.refreshToken, data.user);
-        toast.success("Login successful!");
-        router.push("/dashboard");
-      } catch (loginError) {
-        console.error('Error in login function:', loginError);
-        toast.error("Failed to complete login process");
-      }
-    } catch (error) {
-      console.error('Login request error:', error);
+      // Store tokens first
+      console.log('Storing tokens...');
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      console.log('Tokens stored successfully');
+
+      // Then call login
+      console.log('Calling login function with tokens and user data');
+      login(data.accessToken, data.refreshToken, data.user);
+      
+      toast.success("Login successful!");
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error('Login error:', error);
+      console.error('Error response:', error.response?.data);
+      
       const apiError = handleAPIError(error);
       if (apiError.errors) {
         setErrors(apiError.errors);
