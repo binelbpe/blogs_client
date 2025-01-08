@@ -54,9 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = (accessToken: string, refreshToken: string, userData: User) => {
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
-    setUser(userData);
+    try {
+      // Store tokens first
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      
+      // Then update the user state
+      setUser(userData);
+    } catch (error) {
+      console.error("Login error:", error);
+      // Clean up on error
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      setUser(null);
+    }
   };
 
   const logout = async () => {

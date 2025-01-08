@@ -52,9 +52,21 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       const response = await api.post("/auth/login", formData);
-      const { data } = response.data;
+      
+      // Check if response has the expected structure
+      if (!response.data?.data?.accessToken || 
+          !response.data?.data?.refreshToken || 
+          !response.data?.data?.user) {
+        throw new Error("Invalid server response");
+      }
 
-      login(data.accessToken, data.refreshToken, data.user);
+      const { accessToken, refreshToken, user } = response.data.data;
+
+      // Store tokens before calling login
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      
+      login(accessToken, refreshToken, user);
       toast.success("Login successful!");
       router.push("/dashboard");
     } catch (error) {
@@ -63,6 +75,10 @@ export default function Login() {
         setErrors(apiError.errors);
       }
       toast.error(apiError.message);
+      
+      // Clear any existing tokens on error
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
     } finally {
       setIsSubmitting(false);
     }
@@ -179,12 +195,6 @@ export default function Login() {
 
           {/* Password Reset Link */}
           <div className="mt-4 text-center">
-            <Link
-              href="/forgot-password"
-              className="text-sm text-primary hover:text-primary/80"
-            >
-              Forgot your password?
-            </Link>
           </div>
         </div>
       </div>
