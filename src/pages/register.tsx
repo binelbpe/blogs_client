@@ -6,6 +6,7 @@ import api from "@/utils/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useFormValidation } from "@/hooks/useFormValidation";
+import { handleAPIError } from "@/utils/errorHandler";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -60,14 +61,23 @@ export default function Register() {
     setIsSubmitting(true);
     try {
       const response = await api.post("/auth/register", formData);
-      login(response.data.token, response.data.user);
+      const { data } = response.data;
+      
+      // Pass all three required arguments
+      login(
+        data.accessToken,
+        data.refreshToken,
+        data.user
+      );
+      
       toast.success("Registration successful!");
       router.push("/dashboard");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Registration failed");
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
+    } catch (error) {
+      const apiError = handleAPIError(error);
+      if (apiError.errors) {
+        setErrors(apiError.errors);
       }
+      toast.error(apiError.message);
     } finally {
       setIsSubmitting(false);
     }

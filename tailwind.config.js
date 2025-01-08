@@ -7,13 +7,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#0FA3B1", // Teal
-        secondary: "#B5E2FA", // Light Blue
-        background: "#F9F7F3", // Off White
-        accent: "#EDDEA4", // Light Yellow
-        highlight: "#F7A072", // Coral
+        primary: "#0070f3",
+        secondary: "#00b4d8",
+        highlight: "#ef4444",
+        background: "#f9fafb",
       },
     },
   },
-  plugins: [require("@tailwindcss/typography")],
+  plugins: [
+    require("@tailwindcss/typography"),
+    require("@tailwindcss/line-clamp"),
+  ],
 };
