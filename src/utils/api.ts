@@ -1,8 +1,7 @@
 import axios from "axios";
-import { useRouter } from "next/router";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
   headers: {
     "Content-Type": "application/json",
   },
@@ -12,18 +11,19 @@ const api = axios.create({
 // Add request interceptor
 api.interceptors.request.use(
   (config) => {
+    if (config.url?.startsWith('http')) {
+      delete config.baseURL;
+    }
+    
     if (typeof window !== "undefined") {
       const accessToken = localStorage.getItem("accessToken");
       if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`;
-      } else {
-        console.warn("No access token found in localStorage");
       }
     }
     return config;
   },
   (error) => {
-    console.error("Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
